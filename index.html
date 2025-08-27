@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repo Analyzer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .hidden {
+            display: none;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4 text-center">GitHub Repo Analyzer</h1>
+        
+        <!-- Initial Form -->
+        <div id="repoForm" class="card p-4 mb-4 shadow-sm">
+            <h3 class="mb-3">Analyze Repository</h3>
+            <form id="githubForm">
+                <div class="mb-3">
+                    <label for="repoUrl" class="form-label">GitHub Repository URL</label>
+                    <input type="text" class="form-control" id="repoUrl" placeholder="https://github.com/username/repo" required>
+                    <div class="form-text">Example: https://github.com/username/repo</div>
+                </div>
+                <div class="mb-3">
+                    <label for="githubToken" class="form-label">GitHub Personal Access Token</label>
+                    <input type="password" class="form-control" id="githubToken" required>
+                    <div class="form-text">Your token needs repo access permissions</div>
+                </div>
+                <button type="submit" class="btn btn-primary">Analyze Repository</button>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingSection" class="text-center hidden">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2" id="loadingMessage">Fetching repository files...</p>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysisResults" class="card p-4 mb-4 shadow-sm hidden">
+            <h3 class="mb-3">Repository Analysis</h3>
+            <div id="repoSummary" class="mb-4">
+                <h4>Repository Summary</h4>
+                <div id="repoSummaryContent" class="p-3 bg-light rounded"></div>
+            </div>
+            <div id="suggestedChange" class="mb-4">
+                <h4>Suggested Change</h4>
+                <div id="suggestedChangeContent" class="p-3 bg-light rounded"></div>
+            </div>
+        </div>
+
+        <!-- Commit Verification Form -->
+        <div id="commitForm" class="card p-4 mb-4 shadow-sm hidden">
+            <h3 class="mb-3">Verify Your Changes</h3>
+            <form id="commitVerificationForm">
+                <div class="mb-3">
+                    <label for="commitUrl" class="form-label">Commit URL</label>
+                    <input type="text" class="form-control" id="commitUrl" placeholder="https://github.com/username/repo/commit/hash" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Verify Changes</button>
+            </form>
+        </div>
+
+        <!-- Verification Results -->
+        <div id="verificationResults" class="card p-4 shadow-sm hidden">
+            <h3 class="mb-3">Verification Results</h3>
+            <div id="verificationContent" class="p-3 bg-light rounded"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- App JavaScript -->
+    <script src="script.js" type="module"></script>
+</body>
+</html>
