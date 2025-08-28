@@ -3,7 +3,7 @@ import { openaiConfig } from "https://cdn.jsdelivr.net/npm/bootstrap-llm-provide
 document.addEventListener('DOMContentLoaded', async () => {
 
     const { baseUrl, apiKey } = await openaiConfig({
-        defaultBaseUrls: ["https://aipipe.org/openai/v1","https://llmfoundry.straive.com/openai/v1","https://api.openai.com/v1", "https://openrouter.com/api/v1"],
+        defaultBaseUrls: ["https://aipipe.org/openai/v1", "https://llmfoundry.straive.com/openai/v1","https://api.openai.com/v1", "https://openrouter.com/api/v1"],
       });
     // Form elements
     const githubForm = document.getElementById('githubForm');
@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const repoSummaryContent = document.getElementById('repoSummaryContent');
     const suggestedChangeContent = document.getElementById('suggestedChangeContent');
     const verificationContent = document.getElementById('verificationContent');
+    const verificationBadge = document.getElementById('verificationBadge');
     
     // Store repository information
     let currentRepo = {
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const analysis = await analyzeRepositoryWithLLM();
             
             // Display analysis results
-            repoSummaryContent.innerHTML = `<pre>${analysis.summary}</pre>`;
+            repoSummaryContent.textContent = analysis.summary; // Display summary as plain text for one-liner
             suggestedChangeContent.innerHTML = `<pre>${analysis.suggestedChange}</pre>`;
             
             // Show analysis results and commit form
@@ -115,8 +116,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingMessage.textContent = 'Verifying changes with AI...';
             const verification = await verifyChangesWithLLM(commitChanges);
             
-            // Display verification results
-            verificationContent.innerHTML = `<pre>${verification.result}</pre>`;
+            // Display verification results with color based on success
+            verificationContent.textContent = verification.result;
+            verificationContent.className = verification.success ? 
+                'p-2 bg-success text-white rounded border' : 
+                'p-2 bg-danger text-white rounded border';
+                
+            // Set verification badge
+            verificationBadge.textContent = verification.success ? 'YES' : 'NO';
+            verificationBadge.className = verification.success ? 
+                'badge rounded-pill bg-success' : 
+                'badge rounded-pill bg-danger';
             
             // Show verification results
             loadingSection.classList.add('hidden');
@@ -311,17 +321,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }))
             };
             
-            const systemPrompt = 'You are an expert code analysis assistant. Analyze these repository files and suggest one change to analyze the students understanding of the topic.';
+            const systemPrompt = 'You are an expert code analysis assistant. Analyze these repository files and suggest one change to analyze the students understanding of the topic. Return your response in JSON format with two fields: "summary" (a one-line summary of the repository) and "challenge" (a specific change suggestion). Example: {"summary": "A simple calculator app with basic arithmetic operations", "challenge": "Add unit tests for the division function"}';
             const userPrompt = `Analyze this GitHub repository and suggest one meaningful change or improvement. Repository: ${currentRepo.owner}/${currentRepo.repo}\n\nFiles:\n${JSON.stringify(repoData.files, null, 2)}`;
             
             const analysisText = await callLLM(systemPrompt, userPrompt);
             
-            // Parse analysis text into summary and suggested change
-            const parts = analysisText.split('Suggested Change:');
-            return {
-                summary: parts[0].trim(),
-                suggestedChange: parts.length > 1 ? parts[1].trim() : 'No specific change suggested.'
-            };
+            try {
+                // Parse JSON response
+                const analysisJson = JSON.parse(analysisText);
+                return {
+                    summary: analysisJson.summary || 'No summary provided.',
+                    suggestedChange: analysisJson.challenge || 'No specific change suggested.'
+                };
+            } catch (error) {
+                console.error('Error parsing LLM response as JSON:', error);
+                
+                // Fallback to text parsing if JSON parsing fails
+                const parts = analysisText.split('Suggested Change:');
+                return {
+                    summary: parts[0].trim(),
+                    suggestedChange: parts.length > 1 ? parts[1].trim() : 'No specific change suggested.'
+                };
+            }
         } catch (error) {
             console.error('Error analyzing repository:', error);
             throw new Error('Failed to analyze repository with AI');
@@ -372,14 +393,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Verify changes with LLM
     async function verifyChangesWithLLM(commitChanges) {
         try {
-            const systemPrompt = 'You are a code review assistant. Verify if the changes made in the commit address the suggested improvement.';
+            const systemPrompt = 'You are a code review assistant. Verify if the changes made in the commit address the suggested improvement. Return your response in JSON format with the following fields: "success" (must be exactly "yes" or "no"), and "explanation" (a brief explanation of your assessment). Example: {"success": "yes", "explanation": "The changes successfully implement the requested feature by adding proper error handling."}';
             const userPrompt = `Verify if these commit changes address the suggested improvement for repository ${currentRepo.owner}/${currentRepo.repo}.\n\nSuggested Change: ${document.getElementById('suggestedChangeContent').textContent}\n\nCommit Changes:\n${JSON.stringify(commitChanges, null, 2)}`;
             
             const verificationResult = await callLLM(systemPrompt, userPrompt);
             
-            return {
-                result: verificationResult
-            };
+            try {
+                // Parse JSON response
+                const verificationJson = JSON.parse(verificationResult);
+                return {
+                    success: verificationJson.success === 'yes',
+                    result: verificationJson.explanation || 'No explanation provided.'
+                };
+            } catch (error) {
+                console.error('Error parsing LLM response as JSON:', error);
+                // Fallback to raw text if JSON parsing fails
+                return {
+                    success: false,
+                    result: verificationResult
+                };
+            }
         } catch (error) {
             console.error('Error verifying changes:', error);
             throw new Error('Failed to verify changes with AI');
